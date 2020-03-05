@@ -59,7 +59,7 @@ def calculate_sse(data, estimations):
 	for i in range(len(data.tab_y)):
 		residual = estimations[i] - data.tab_y[i]
 		residuals.append(residual)
-		squared_residuals.append(int(math.pow(residual, 2)))
+		squared_residuals.append(math.pow(residual, 2))
 	sse = sum(squared_residuals)
 	return (sse)
 
@@ -85,7 +85,7 @@ def main():
 	# save thetas
 	data.theta0 = data.norm_theta0 * data.max_y
 	data.theta1 = data.norm_theta1 * data.max_y / data.max_x
-	utils.save_thetas(data.norm_theta0, data.norm_theta1)
+	utils.save_thetas(data.theta0, data.theta1)
 
 	#print_dataset(data)
 

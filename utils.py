@@ -81,9 +81,13 @@ def save_thetas(theta0, theta1):
 
 def retrieve_thetas():
 	thetas = []
-	with open("learning_results.pkl", 'rb') as fobj:
-		thetas = pickle.load(fobj)
-	return (thetas[0], thetas[1])
+	filename = "learning_results.pkl"
+	try:
+		with open(filename, 'rb') as fobj:
+			thetas = pickle.load(fobj)
+		return (thetas[0], thetas[1])
+	except IOError:
+		return (0, 0)
 
 def normalize(value, max_value):
 	return (value / max_value)
