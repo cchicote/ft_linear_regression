@@ -5,85 +5,99 @@ import csv
 import utils
 import estimate_price as est
 import matplotlib.pyplot as plt
+from pprint import pprint
 
-def train_model(ratio, theta0, theta1, km_x, price_y):
-	m = len(km_x)
-	tmp_t0, tmp_t1 = 0, 0
+class Dataset:
+	def __init__(self, tab_x, tab_y):
+		self.tab_x = np.array(tab_x, dtype=np.float64)
+		self.tab_y = np.array(tab_y, dtype=np.float64)
+		self.min_x = self.tab_x.min()
+		self.max_x = self.tab_x.max()
+		self.min_y = self.tab_y.min() 
+		self.max_y = self.tab_y.max()
+		self.norm_tab_x = utils.normalize(self.tab_x, self.max_x, self.min_x)
+		self.norm_tab_y = utils.normalize(self.tab_y, self.max_y, self.min_y)
+		self.sorted_tab_x, self.sorted_tab_y = zip(*sorted(zip(self.tab_x, self.tab_y)))
+		self.theta0 = 0
+		self.norm_theta0 = 0
+		self.theta1 = 0
+		self.norm_theta1 = 0
+		self.mean_x = utils.calculate_mean(self.tab_y, self.tab_x)
+		self.mean_y = utils.calculate_mean(self.tab_x, self.tab_y)
+
+def print_dataset(data):
+	pprint(vars(data))
+
+def train_model(ratio, theta0, theta1, tab_x, tab_y):
+	m = len(tab_x)
+	tmp_t0, tmp_t1, estimated_price = 0, 0, 0
 	for i in range(m):
-		tmp_t0 += ratio * (est.estimate_price(km_x[i], theta0, theta1) - price_y[i])
-		tmp_t1 += ratio * (est.estimate_price(km_x[i], theta0, theta1) - price_y[i]) * km_x[i]
-	theta0 -= tmp_t0
-	theta1 -= tmp_t1
+		estimated_price = est.estimate_price(tab_x[i], theta0, theta1)
+		tmp_t0 += ratio * (estimated_price - tab_y[i])
+		tmp_t1 += ratio * (estimated_price - tab_y[i]) * tab_x[i]
+	theta0 -= tmp_t0 / m
+	theta1 -= tmp_t1 / m
 	return (theta0, theta1)
 
-def plot_estimations(theta0, theta1, km_x, price_y):
+def plot_estimations(data, labelx, labely):
 	estimations = []
-	for x in km_x:
-		estimations.append(est.estimate_price(x, theta0, theta1))
-	plt.plot(km_x, price_y, 'ro')
-	plt.plot(km_x, estimations, 'bo')
-	plt.xlabel('km')
-	plt.ylabel('price')
+	for x in data.tab_x:
+		estimations.append(est.estimate_price(x, data.theta0, data.theta1))
+	our_sse = calculate_sse(data, estimations)
+	normal_sse = calculate_sse(data, data.mean_y)
+	print("\nNORMAL SSE = ", normal_sse)
+	print("OUR SSE = ", our_sse)
+	print("Are we better?: ", our_sse < normal_sse)
+	print("{0:.2f}%".format((1 - our_sse / normal_sse) * 100))
+	plt.plot(data.tab_x, data.tab_y, 'ro')
+	plt.plot(data.tab_x, estimations, 'bo')
+	plt.plot(data.sorted_tab_x, data.mean_y, '--')
+	plt.xlabel(labelx)
+	plt.ylabel(labely)
 	plt.show()
 
-def main():
-	km_x, price_y = [], []
-	norm_km_x, norm_price_y = [], []
-	km_x_max, price_y_max = 0, 0 
-	sorted_x, sorted_y = [], []
-	theta0, theta1 = 0, 0
-	loops = 0	
+def calculate_sse(data, estimations):
+	residuals = []
+	squared_residuals = []
+	for i in range(len(data.tab_y)):
+		residual = estimations[i] - data.tab_y[i]
+		residuals.append(residual)
+		squared_residuals.append(math.pow(residual, 2))
+	sse = sum(squared_residuals)
+	return (sse)
 
-	# parsing number of loops
-	print("This program trains our program to estimate the price of a car based on a mileage, we need you, the user, to enter a number of trainings that our program will go through:")
-	loops = utils.parse_input_int()
+def main():
+	# Get number of trainings and ratio
+	loops = utils.parse_input_int(message=utils.bcolors.YELLOW + "How much trainings do you want our program to go through:\n" + utils.bcolors.ENDC)
 	if (loops == -1):
 		return
-	print("Ok so you need", loops, "loops")
-
-	# parsing csv
-	print("Parsing CSV\n")
-	km_x, price_y = utils.parse_csv('data.csv', 'km', 'price')
-	if (km_x is None or price_y is None):
+	ratio = utils.parse_input_float(message=utils.bcolors.YELLOW + "At what rate:\n" + utils.bcolors.ENDC)
+	if (ratio == -1):
 		return
-	print("Km:", km_x, "\n")
-	print("Price:",  price_y, "\n")
-
-	# calculate mean
-	mean = utils.calculate_mean(km_x, price_y)
-	print("MEAN:", mean)
-
-	# sort values
-	sorted_x, sorted_y = zip(*sorted(zip(km_x, price_y)))
-
-	# normalize values
-	norm_km_x = np.array(km_x, dtype=np.float64)
-	km_x_max = norm_km_x.max()
-	norm_km_x = utils.normalize(norm_km_x, km_x_max)
-	norm_price_y = np.array(price_y, dtype=np.float64)
-	price_y_max = norm_price_y.max()
-	norm_price_y = utils.normalize(norm_price_y, price_y_max)
-	print("Normalized km:", norm_km_x, "\n")
-	print("Normalized price:",  norm_price_y, "\n")
-
-	# training
-	for i in range(loops):
-		theta0, theta1 = train_model(0.01, theta0, theta1, norm_km_x, norm_price_y)
-		print(theta0, theta1)
+ 
+	# Get dataset - Get max values - Normalize values - Sort tabs - Set both thetas to 0
+	tmp_tab_x, tmp_tab_y = utils.parse_csv('data.csv', 'km', 'price')
+	if (tmp_tab_x is None or tmp_tab_y is None):
+		return
+	data = Dataset(tmp_tab_x, tmp_tab_y)
 	
-	# saving thetas
-	print(km_x_max, price_y_max)
-	norm_theta0 = theta0 * price_y_max
-	norm_theta1 = theta1 * price_y_max / km_x_max
-	print("Normalized thetas:", norm_theta0, norm_theta1)
-	utils.save_thetas(norm_theta0, norm_theta1)
+	# train model
+	for i in range(loops):
+		data.norm_theta0, data.norm_theta1 = train_model(ratio, data.norm_theta0, data.norm_theta1, data.norm_tab_x, data.norm_tab_y)
+	
+	not_norm_theta0, not_norm_theta1 = 0, 0
+	for i in range(loops):
+		not_norm_theta0, not_norm_theta1 = train_model(ratio, not_norm_theta0, not_norm_theta1, data.tab_x, data.tab_y)
 
-	plot_estimations(norm_theta0, norm_theta1, km_x, price_y)
+	# save thetas
+	data.theta0 = data.norm_theta0 * data.max_y
+	data.theta1 = data.norm_theta1 * data.max_y / data.max_x
+	utils.save_thetas(data.theta0, data.theta1)
 
-	# plot
-	plt.plot(km_x, price_y, 'ro')
-	plt.plot(sorted_x, mean, '--')
-	#plt.show()
+	#print_dataset(data)
+
+	# plot results
+	plot_estimations(data, 'km', 'price')
 
 if __name__ == '__main__':
 	main()
