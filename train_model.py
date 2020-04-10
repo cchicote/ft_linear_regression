@@ -75,7 +75,7 @@ def main():
 	if (ratio == -1):
 		return
  
-	# Get dataset - Get max values - Normalize values - Sort tabs - Set both thetas to 0
+	# Get dataset - Get min-max values - Normalize values - Sort tabs - Set both thetas to 0
 	tmp_tab_x, tmp_tab_y = utils.parse_csv('data.csv', 'km', 'price')
 	if (tmp_tab_x is None or tmp_tab_y is None):
 		return
@@ -85,18 +85,10 @@ def main():
 	for i in range(loops):
 		data.norm_theta0, data.norm_theta1 = train_model(ratio, data.norm_theta0, data.norm_theta1, data.norm_tab_x, data.norm_tab_y)
 	
-	not_norm_theta0, not_norm_theta1 = 0, 0
-	for i in range(loops):
-		not_norm_theta0, not_norm_theta1 = train_model(ratio, not_norm_theta0, not_norm_theta1, data.tab_x, data.tab_y)
-
-	# save thetas
-	data.theta0 = data.norm_theta0 * (data.max_y - data.min_y)
-	#data.theta0 = data.norm_theta0 * data.max_y
-	data.theta1 = data.norm_theta1 * (data.max_y - data.min_y) / (data.max_x - data.min_x)
-	#data.theta1 = data.norm_theta1 * data.max_y / data.max_x
+	# de-normalize thetas and save them
+	data.theta0 = utils.de_normalize(data.norm_theta0, data.max_y, data.min_y)
+	data.theta1 = utils.de_normalize(data.norm_theta1, data.max_y, data.min_y) / (data.max_x - data.min_x)
 	utils.save_thetas(data.theta0, data.theta1)
-
-	#print_dataset(data)
 
 	# plot results
 	plot_estimations(data, 'km', 'price')
