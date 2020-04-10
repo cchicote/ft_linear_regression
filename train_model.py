@@ -90,8 +90,10 @@ def main():
 		not_norm_theta0, not_norm_theta1 = train_model(ratio, not_norm_theta0, not_norm_theta1, data.tab_x, data.tab_y)
 
 	# save thetas
-	data.theta0 = data.norm_theta0 * data.max_y
-	data.theta1 = data.norm_theta1 * data.max_y / data.max_x
+	data.theta0 = data.norm_theta0 * (data.max_y - data.min_y)
+	#data.theta0 = data.norm_theta0 * data.max_y
+	data.theta1 = data.norm_theta1 * (data.max_y - data.min_y) / (data.max_x - data.min_x)
+	#data.theta1 = data.norm_theta1 * data.max_y / data.max_x
 	utils.save_thetas(data.theta0, data.theta1)
 
 	#print_dataset(data)
