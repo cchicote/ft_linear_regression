@@ -89,8 +89,8 @@ def retrieve_thetas():
 	except IOError:
 		return (0, 0)
 
-def normalize(value, max_value):
-	return (value / max_value)
+def normalize(value, max_value, min_value):
+	return (value / (max_value - min_value))
 	
-def de_normalize(value, max_value):
-	return (value * max_value)
+def de_normalize(value, max_value, min_value):
+	return (value * (max_value - min_value))
