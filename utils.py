@@ -2,6 +2,7 @@ import pickle
 import csv
 import matplotlib.pyplot as plt
 import numpy as np
+from pprint import pprint
 
 class bcolors:
     BLUE = '\033[94m'
@@ -94,3 +95,6 @@ def normalize(value, max_value, min_value):
 	
 def de_normalize(value, max_value, min_value):
 	return (value * (max_value - min_value))
+
+def print_dataset(dataset):
+	pprint(vars(dataset))

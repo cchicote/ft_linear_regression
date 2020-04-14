@@ -3,9 +3,9 @@ import numpy as np
 import math
 import csv
 import utils
+import test
 import estimate_price as est
 import matplotlib.pyplot as plt
-from pprint import pprint
 
 class Dataset:
 	def __init__(self, tab_x, tab_y):
@@ -25,9 +25,6 @@ class Dataset:
 		self.mean_x = utils.calculate_mean(self.tab_y, self.tab_x)
 		self.mean_y = utils.calculate_mean(self.tab_x, self.tab_y)
 
-def print_dataset(data):
-	pprint(vars(data))
-
 def train_model(ratio, theta0, theta1, tab_x, tab_y):
 	m = len(tab_x)
 	tmp_t0, tmp_t1, estimated_price = 0, 0, 0
@@ -38,33 +35,6 @@ def train_model(ratio, theta0, theta1, tab_x, tab_y):
 	theta0 -= tmp_t0 / m
 	theta1 -= tmp_t1 / m
 	return (theta0, theta1)
-
-def plot_estimations(data, labelx, labely):
-	estimations = []
-	for x in data.tab_x:
-		estimations.append(est.estimate_price(x, data.theta0, data.theta1))
-	our_sse = calculate_sse(data, estimations)
-	normal_sse = calculate_sse(data, data.mean_y)
-	print("\nNORMAL SSE = ", normal_sse)
-	print("OUR SSE = ", our_sse)
-	print("Are we better?: ", our_sse < normal_sse)
-	print("{0:.2f}%".format((1 - our_sse / normal_sse) * 100))
-	plt.plot(data.tab_x, data.tab_y, 'ro')
-	plt.plot(data.tab_x, estimations, 'bo')
-	plt.plot(data.sorted_tab_x, data.mean_y, '--')
-	plt.xlabel(labelx)
-	plt.ylabel(labely)
-	plt.show()
-
-def calculate_sse(data, estimations):
-	residuals = []
-	squared_residuals = []
-	for i in range(len(data.tab_y)):
-		residual = estimations[i] - data.tab_y[i]
-		residuals.append(residual)
-		squared_residuals.append(math.pow(residual, 2))
-	sse = sum(squared_residuals)
-	return (sse)
 
 def main():
 	# Get number of trainings and ratio
@@ -89,9 +59,6 @@ def main():
 	data.theta0 = utils.de_normalize(data.norm_theta0, data.max_y, data.min_y)
 	data.theta1 = utils.de_normalize(data.norm_theta1, data.max_y, data.min_y) / (data.max_x - data.min_x)
 	utils.save_thetas(data.theta0, data.theta1)
-
-	# plot results
-	plot_estimations(data, 'km', 'price')
 
 if __name__ == '__main__':
 	main()
