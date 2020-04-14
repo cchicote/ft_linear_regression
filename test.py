@@ -46,9 +46,13 @@ def main():
 		return
 	data = train_model.Dataset(tmp_tab_x, tmp_tab_y)
 
-	for i in range(5, 100, 5):
+	max_iterations = 100
+	slope = 5
+	ratio = 1
+
+	for i in range(5, max_iterations, slope):
 		print(i, "iterations")
-		test_progression(data, i, 1)
+		test_progression(data, i, ratio)
 		data.theta0, data.norm_theta0, data.theta1, data.norm_theta1 = 0, 0, 0, 0
 		print("")
 
