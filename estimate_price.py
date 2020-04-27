@@ -21,7 +21,6 @@ def main():
 			return
 		
 		# estimating price
-		# print("Making price estimations with:\nTheta0 =", theta0, "\nTheta1 =", theta1, "\nFor a car with a", km, "km mileage\n")
 		estimated_price = estimate_price(km, theta0, theta1)
 		if (estimated_price < 0):
 			print(utils.bcolors.RED + "The price is below zero\n", utils.bcolors.ENDC)
