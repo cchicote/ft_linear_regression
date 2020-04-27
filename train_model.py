@@ -37,6 +37,12 @@ def train_model(ratio, theta0, theta1, tab_x, tab_y):
 	return (theta0, theta1)
 
 def main():
+	# Get dataset - Get min-max values - Normalize values - Sort tabs - Set both thetas to 0
+	tmp_tab_x, tmp_tab_y = utils.parse_csv('data.csv', 'km', 'price')
+	if (tmp_tab_x is None or tmp_tab_y is None):
+		return
+	data = Dataset(tmp_tab_x, tmp_tab_y)
+	
 	# Get number of trainings and ratio
 	loops = utils.parse_input_int(message=utils.bcolors.YELLOW + "How much trainings do you want our program to go through:\n" + utils.bcolors.ENDC)
 	if (loops == -1):
@@ -45,12 +51,6 @@ def main():
 	if (ratio == -1):
 		return
  
-	# Get dataset - Get min-max values - Normalize values - Sort tabs - Set both thetas to 0
-	tmp_tab_x, tmp_tab_y = utils.parse_csv('data.csv', 'km', 'price')
-	if (tmp_tab_x is None or tmp_tab_y is None):
-		return
-	data = Dataset(tmp_tab_x, tmp_tab_y)
-	
 	# train model
 	for i in range(loops):
 		data.norm_theta0, data.norm_theta1 = train_model(ratio, data.norm_theta0, data.norm_theta1, data.norm_tab_x, data.norm_tab_y)

@@ -10,6 +10,7 @@ import plotly
 from plotly.graph_objs import Scatter, Layout
 import plotly.graph_objects as go
 import pandas as pd
+from statistics import mean
 
 def generate_fig(data, slope, max_iterations):
 	fig_dict = {
@@ -81,16 +82,6 @@ def generate_sliders():
 		"steps": []
 	}
 	return sliders_dict
-
-def calculate_sse(data, estimations):
-	residuals = []
-	squared_residuals = []
-	for i in range(len(data.tab_y)):
-		residual = estimations[i] - data.tab_y[i]
-		residuals.append(residual)
-		squared_residuals.append(math.pow(residual, 2))
-	sse = sum(squared_residuals)
-	return (sse / len(data.tab_y))
 
 def build_fig_data(data, estimations, graph_data):
 	# Generate Figure data
@@ -178,14 +169,31 @@ def run_test(data, slope, max_iterations, ratio, graph_data):
 			# Iterate through the dataset to estimate for each entry
 			for x in data.tab_x:
 				estimations.append(est.estimate_price(x, data.theta0, data.theta1))
-			build_frame_data(data, estimations, i, graph_data)
+			build_frame_data(data, estimations, i, graph_data)	
 	print("done!")
+
+	print("Calculating SSE...")
+	given_data_sse = calculate_sse(data.tab_x, data.tab_y, mean(data.tab_y))
+	estimations_sse = calculate_sse(data.tab_x, estimations, mean(data.tab_y))
+	print("Given data SSE: [", given_data_sse, "]")
+	print("Estimations SSE: [", estimations_sse, "]")
+	print("Are we better ?: ", given_data_sse > estimations_sse)
+
 	print("Generating figure...", end=' ')
 	graph_data["figure"]["layout"]["sliders"] = [graph_data["sliders"]]
 	fig = go.Figure(graph_data["figure"])
 	fig.show()
 	print("done!")
 
+def calculate_sse(tab_x, tab_y, mean_y):
+	residuals = []
+	squared_residuals = []
+	for i in range(len(tab_y)):
+		residual = tab_y[i] - mean_y
+		residuals.append(residual)
+		squared_residuals.append(math.pow(residual, 2))
+	sse = sum(squared_residuals)
+	return (sse / len(tab_y))
 
 def main():
 	tmp_tab_x, tmp_tab_y = utils.parse_csv('data.csv', 'km', 'price')

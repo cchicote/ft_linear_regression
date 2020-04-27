@@ -4,7 +4,7 @@ import pickle
 import utils
 
 def estimate_price(km, theta0, theta1):
-	price = theta0 + theta1 * km
+	price = theta0 + (theta1 * km)
 	return (price)
 
 def main():
