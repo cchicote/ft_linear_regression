@@ -5,21 +5,21 @@ import csv
 import utils
 import train_model
 import estimate_price as est
-from pprint import pprint
 import plotly
 from plotly.graph_objs import Scatter, Layout
 import plotly.graph_objects as go
 import pandas as pd
 from statistics import mean
 
-def generate_fig(data, slope, max_iterations):
+def generate_fig(data, slope, max_iterations, title_x, title_y):
+	# Generate the figure
 	fig_dict = {
 		"data": [],
 		"layout": {},
 		"frames": []
 	}
-	fig_dict["layout"]["xaxis"] = {"range": [min(data.tab_x) + (min(data.tab_x)) * 0.1, max(data.tab_x) + (max(data.tab_x)) * 0.1], "title": "Kilometers"}
-	fig_dict["layout"]["yaxis"] = {"title": "Price", "type": "log"}
+	fig_dict["layout"]["xaxis"] = {"title": title_x}
+	fig_dict["layout"]["yaxis"] = {"title": title_y}
 	fig_dict["layout"]["hovermode"] = "closest"
 	fig_dict["layout"]["sliders"] = {
 		"args": [
@@ -64,6 +64,7 @@ def generate_fig(data, slope, max_iterations):
 	return fig_dict
 
 def generate_sliders():
+	# Generate the sliders
 	sliders_dict = {
     		"active": 0,
    		"yanchor": "top",
@@ -83,8 +84,8 @@ def generate_sliders():
 	}
 	return sliders_dict
 
-def build_fig_data(data, estimations, graph_data):
-	# Generate Figure data
+def build_fig_data_linear_regression(data, estimations, graph_data):
+	# Generate the figure's data
 	data_dict_given = {
 		"x": data.tab_x,
 		"y": data.tab_y,
@@ -95,14 +96,14 @@ def build_fig_data(data, estimations, graph_data):
 	data_dict_estimations = {
 		"x": data.tab_x,
 		"y": estimations,
-		"mode": "markers",
+		"mode": "lines+markers",
 		"text": "Estimations",
 		"name": "estimations"
 	}
 	graph_data["figure"]["data"].append(data_dict_given)
 	graph_data["figure"]["data"].append(data_dict_estimations)
 
-def build_frame_data(data, estimations, i, graph_data):
+def build_frame_data_linear_regression(data, estimations, i, graph_data):
 	# Build frame for the given dataset
 	frame = {"data": [], "name": str(i)}
 	data_dict_given = {
@@ -128,7 +129,7 @@ def build_frame_data(data, estimations, i, graph_data):
 	data_dict = {
 		"x": data.tab_x,
 		"y": estimations,
-		"mode": "markers",
+		"mode": "lines+markers",
 		"text": "Estimations",
 		"name": "estimations"
 		}
@@ -144,20 +145,23 @@ def build_frame_data(data, estimations, i, graph_data):
 		"method": "animate"}
 	graph_data["sliders"]["steps"].append(slider_step)
 
-
-def run_test(data, slope, max_iterations, ratio, graph_data):
+def plot_linear_regression(data, slope, max_iterations, ratio):
+	utils.print_colored("[linear_regression][Plotting linear regression...] start!", utils.bcolors.YELLOW)
+	graph_data = {}
+	graph_data["figure"] = generate_fig(data, slope, max_iterations, "Kilometers", "Price")
+	graph_data["sliders"] = generate_sliders()
 
 	# Build initial figure data, and frame_data for i == 0
-	print("Building initial figure and frame datas...", end=' ')
+	utils.print_colored("[linear_regression][Building initial figure and frame datas...] start!", utils.bcolors.YELLOW)
 	estimations = []
 	for x in data.tab_x:
 		estimations.append(est.estimate_price(x, data.theta0, data.theta1))
-	build_fig_data(data, estimations, graph_data)
-	build_frame_data(data, estimations, 0, graph_data)
-	print("done!")
+	build_fig_data_linear_regression(data, estimations, graph_data)
+	build_frame_data_linear_regression(data, estimations, 0, graph_data)
+	utils.print_colored("[linear_regression][Building initial figure and frame datas...] finished!", utils.bcolors.GREEN)
 		
 	# Iterate max_iterations times through the dataset to train the model
-	print("Building frame data...", end=' ')
+	utils.print_colored("[linear_regression][Building frame data...] start!", utils.bcolors.YELLOW)
 	for i in range(1, max_iterations + 1):
 		data.norm_theta0, data.norm_theta1 = train_model.train_model(ratio, data.norm_theta0, data.norm_theta1, data.norm_tab_x, data.norm_tab_y)
 		# Every slope times, we make a snapshot of the estimations with the current thetas (slope can be equal to 1)
@@ -169,50 +173,60 @@ def run_test(data, slope, max_iterations, ratio, graph_data):
 			# Iterate through the dataset to estimate for each entry
 			for x in data.tab_x:
 				estimations.append(est.estimate_price(x, data.theta0, data.theta1))
-			build_frame_data(data, estimations, i, graph_data)	
-	print("done!")
+			build_frame_data_linear_regression(data, estimations, i, graph_data)
+	utils.print_colored("[linear_regression][Building frame data...] finished!", utils.bcolors.GREEN)
 
-	print("Calculating SSE...")
-	given_data_sse = calculate_sse(data.tab_x, data.tab_y, mean(data.tab_y))
-	estimations_sse = calculate_sse(data.tab_x, estimations, mean(data.tab_y))
-	print("Given data SSE: [", given_data_sse, "]")
-	print("Estimations SSE: [", estimations_sse, "]")
-	print("Are we better ?: ", given_data_sse > estimations_sse)
-
-	print("Generating figure...", end=' ')
+	utils.print_colored("[linear_regression][Generating figure...] start!", utils.bcolors.YELLOW)
 	graph_data["figure"]["layout"]["sliders"] = [graph_data["sliders"]]
 	fig = go.Figure(graph_data["figure"])
 	fig.show()
-	print("done!")
+	utils.print_colored("[linear_regression][Generating figure...] finished!", utils.bcolors.GREEN)
+	utils.print_colored("[linear_regression][Plotting linear regression...] finished!\n", utils.bcolors.GREEN)
 
-def calculate_sse(tab_x, tab_y, mean_y):
-	residuals = []
-	squared_residuals = []
-	for i in range(len(tab_y)):
-		residual = tab_y[i] - mean_y
-		residuals.append(residual)
-		squared_residuals.append(math.pow(residual, 2))
-	sse = sum(squared_residuals)
-	return (sse / len(tab_y))
+def cost_function(data):
+	cost = 0
+	m = len(data.norm_tab_x)
+	for i in range(len(data.norm_tab_x)):
+		cost += (est.estimate_price(data.norm_tab_x[i], data.norm_theta0, data.norm_theta1) - data.norm_tab_y[i])**2
+	return (cost/(2*m))
+
+def plot_cost_function(data, slope, max_iterations, ratio):
+	utils.print_colored("[cost_function][Plotting cost function...] start!", utils.bcolors.YELLOW)
+	cost = []
+
+	utils.print_colored("[cost_function][Calculating cost function...] start!", utils.bcolors.YELLOW)
+	for i in range(1, max_iterations + 1):
+		data.norm_theta0, data.norm_theta1 = train_model.train_model(ratio, data.norm_theta0, data.norm_theta1, data.norm_tab_x, data.norm_tab_y)
+		cost.append(cost_function(data))
+	utils.print_colored("[cost_function][Calculating cost function...] finished!", utils.bcolors.GREEN)
+
+	utils.print_colored("[cost_function][Generating figure...] start!", utils.bcolors.YELLOW)
+	max_iter_table = np.arange(max_iterations)
+	fig = go.Figure(data=go.Scatter(x=max_iter_table, y=cost))
+	fig.show()
+	utils.print_colored("[cost_function][Generating figure...] finished!", utils.bcolors.GREEN)
+	utils.print_colored("[cost_function][Plotting cost function...] finished!\n", utils.bcolors.GREEN)
 
 def main():
-	tmp_tab_x, tmp_tab_y = utils.parse_csv('data.csv', 'km', 'price')
-	if (tmp_tab_x is None or tmp_tab_y is None):
-		return
-	data = train_model.Dataset(tmp_tab_x, tmp_tab_y)
-	
 	# The slope defines how many iterations the program has to go through before adding a new frame to the graph
 	slope = 1
 	# Does this need any explanation ?
-	max_iterations = 200
+	max_iterations = 1000
 	# Learning ratio
-	ratio = 1
+	ratio = 0.1
 	
-	graph_data = {}
-	graph_data["figure"] = generate_fig(data, slope, max_iterations)
-	graph_data["sliders"] = generate_sliders()
-	
-	run_test(data, slope, max_iterations, ratio, graph_data)
+	# Parsing CSV to build the data
+	tmp_tab_x, tmp_tab_y = utils.parse_csv('data.csv', 'km', 'price')
+	if (tmp_tab_x is None or tmp_tab_y is None):
+		return
 
+	# Creating new dataset for cost function test
+	data = train_model.Dataset(tmp_tab_x, tmp_tab_y)
+	plot_cost_function(data, slope, max_iterations, ratio)
+	
+	# Creating new dataset for linear regression test
+	data = train_model.Dataset(tmp_tab_x, tmp_tab_y)
+	plot_linear_regression(data, slope, max_iterations, ratio)
+	
 if __name__ == '__main__':
 	main()
